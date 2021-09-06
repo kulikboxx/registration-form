@@ -1,98 +1,128 @@
 'use strict';
 
-const formBoxes = document.querySelectorAll('.form .form-box'),
-    inputs = document.querySelectorAll('.form input'),
-    send = document.querySelector('.form .send'),
-    clear = document.querySelector('.form .clear'),
-    modal = document.querySelector('.modal'),
-    close = document.querySelector('.close');
-
 const messages = {
-    user: 'Enter at least 4 characters',
-    pass: 'Enter at least 7 characters',
-    pass2: 'Passwords do not match',
-    email: 'Enter email address',
-    invalid: 'Invalid email address'
+    reqField: 'Please fill in this field',
+    password: 'Passwords do not match',
+    email: 'Invalid email address'
 }
 
-const showAlert = (parentEl, alert) => {
-    parentEl.classList.add('error');
-    parentEl.lastElementChild.textContent = alert;
+function checkInput(selector) {
+    let inputs = document.querySelectorAll(selector),
+        password, password2;
+
+    inputs.forEach(input => {
+        switch (input.id) {
+            case 'username':
+                checkInputValueLength(input, 6);
+                break;
+            case 'password':
+                password = input;
+                checkInputValueLength(input, 8);
+                break;
+            case 'password2':
+                password2 = input;
+                checkInputValueLength(input, 8);
+                checkPassword(password, password2);
+                break;
+            case 'email':
+                checkInputValueLength(input, 6);
+                emailValidation(input);
+                break;
+        }
+    });
 }
 
-const hideAlert = (parentEl) => {
-    parentEl.classList.remove('error');
-    parentEl.lastElementChild.textContent = '';
+function checkInputValueLength(input, min) {
+    if (input.value.length == 0) {
+        showAlertError(input, messages.reqField);
+    } else if (input.value.length > 0 && input.value.length < min) {
+        showAlertError(input, `Enter at least ${min} characters`);
+    } else {
+        hideAlertError(input);
+    }
 }
 
-const emailValidation = (email) => {
-    const result = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return result.test(String(email).toLowerCase());
+function checkPassword(pass1, pass2) {
+    if (pass1.value != pass2.value) {
+        showAlertError(pass2, messages.password);
+    }
 }
 
-const checkInputs = () => {
-    let userName = document.querySelector('.username'),
-        pass = document.querySelector('.password'),
-        pass2 = document.querySelector('.password2'),
-        email = document.querySelector('.email'),
+function emailValidation(email) {
+    const res = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+    if (!res.test(String(email.value).toLowerCase()) && email.value != '') {
+        showAlertError(email, messages.email);
+    }
+}
+
+function checkError(selector) {
+    let formBox = document.querySelectorAll(selector),
         countError = 0;
 
-    userName.value.length < 4 ? showAlert(userName.parentElement, messages.user) : hideAlert(userName.parentElement);
-
-    if (pass.value == '' && pass2.value == '') {
-        showAlert(pass.parentElement, messages.pass);
-        showAlert(pass2.parentElement, messages.pass);
-    } else if (pass.value !== '' || pass2.value !== '') {
-        showAlert(pass.parentElement, messages.pass);
-        showAlert(pass2.parentElement, messages.pass);
-        if (pass.value !== pass2.value) {
-            showAlert(pass2.parentElement, messages.pass2);
-        } else if (pass.value.length < 7 && pass2.value.length < 7) {
-            showAlert(pass.parentElement, messages.pass);
-            showAlert(pass2.parentElement, messages.pass);
-        } else {
-            hideAlert(pass.parentElement);
-            hideAlert(pass2.parentElement);
+    formBox.forEach(el => {
+        if (el.classList.contains('error')) {
+            countError++;
         }
-    }
-
-    if (email.value == '') {
-        showAlert(email.parentElement, messages.email);
-    } else if (emailValidation(email.value) === false) {
-        showAlert(email.parentElement, messages.invalid);
-    } else if (emailValidation(email.value) === true) {
-        hideAlert(email.parentElement);
-    }
-
-    formBoxes.forEach(item => {
-        if (item.classList.contains('error')) countError++;
     });
 
     if (countError === 0) {
-        sendForm();
-        clearForm();
+        return true;
     }
 }
 
-const sendForm = () => {
-    modal.style.top = '40px';
+function showAlertError(selector, alert) {
+    selector.parentElement.classList.add('error');
+    selector.nextElementSibling.textContent = alert;
 }
 
-const clearForm = () => {
-    formBoxes.forEach(item => item.classList.remove('error'))
-    inputs.forEach(item => item.value = '');
+function hideAlertError(selector) {
+    selector.parentElement.classList.remove('error');
+    selector.nextElementSibling.textContent = '';
 }
 
-send.addEventListener('click', (e) => {
+function formSend(selector) {
+    if (checkError(selector)) {
+        clearForm(selector);
+        showModal();
+    }
+}
+
+function showModal() {
+    const modal = document.querySelector('.modal');
+
+    if (!modal.classList.contains('show-modal')) {
+        modal.classList.add('show-modal');
+    } else {
+        modal.classList.remove('show-modal');
+    }
+}
+
+function clearForm(selector) {
+    const elements = document.querySelectorAll(selector);
+
+    elements.forEach(element => {
+        element.classList.remove('error');
+        element.firstElementChild.value = '';
+        element.lastElementChild.textContent = '';
+    });
+}
+
+document.addEventListener('click', e => {
     e.preventDefault();
-    checkInputs();
+
+    if (e.target.classList.contains('send')) {
+        checkInput('.input');
+        formSend('.form-box');
+    }
+
+    if (e.target.classList.contains('clear')) {
+        clearForm('.form-box');
+    }
+
+    if (e.target.classList.contains('close')) {
+        showModal();
+    }
 });
 
-clear.addEventListener('click', (e) => {
-    e.preventDefault();
-    clearForm();
-});
-
-close.addEventListener('click', () => {
-    modal.style.top = '-150%';
-});
+document.addEventListener('input', () => checkInput('.input'));
